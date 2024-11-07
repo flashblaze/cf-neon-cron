@@ -10,9 +10,24 @@
  *
  * Learn more at https://developers.cloudflare.com/workers/
  */
+import { Client } from '@neondatabase/serverless';
 
 export default {
-	async fetch(request, env, ctx): Promise<Response> {
-		return new Response('Hello World!');
+	async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+		return new Response(`Hello world!`);
+	},
+
+	async scheduled(event: ScheduledController, env: Env, ctx: ExecutionContext) {
+		console.log('Running scheduled database check...');
+
+		try {
+			const client = new Client(env.DATABASE_URL);
+			await client.connect();
+			const { rows } = await client.query('SELECT COUNT(*) FROM "Note";');
+			console.log(`Scheduled check - Total records: ${rows[0].count}`);
+			await client.end();
+		} catch (error) {
+			console.error('Error in scheduled job:', error);
+		}
 	},
 } satisfies ExportedHandler<Env>;

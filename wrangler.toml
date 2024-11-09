@@ -7,5 +7,9 @@ compatibility_flags = ["nodejs_compat"]
 [observability]
 enabled = true
 
+[vars]
+NODE_VERSION = "20.17.0"
+PNPM_VERSION = "9.12.3"
+
 [triggers]
 crons = ["*/4 * * * *"] # Runs every 4 minutes

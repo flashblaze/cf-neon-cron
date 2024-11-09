@@ -18,13 +18,22 @@ export default {
 	},
 
 	async scheduled(event: ScheduledController, env: Env, ctx: ExecutionContext) {
-		console.log('Running scheduled database check...');
-
 		try {
 			const client = new Client(env.DATABASE_URL);
 			await client.connect();
-			const { rows } = await client.query('SELECT COUNT(*) FROM "Note";');
-			console.log(`Scheduled check - Total records: ${rows[0].count}`);
+
+			// Insert a new note
+			const insertResult = await client.query(
+				'INSERT INTO "Note" (id, note, "createdAt", "updatedAt") VALUES (gen_random_uuid(), $1, NOW(), NOW()) RETURNING id',
+				['Test note from scheduled job']
+			);
+			const noteId = insertResult.rows[0].id;
+			console.log(`Created note with ID: ${noteId}`);
+
+			// Delete the note
+			await client.query('DELETE FROM "Note" WHERE id = $1', [noteId]);
+			console.log(`Deleted note with ID: ${noteId}`);
+
 			await client.end();
 		} catch (error) {
 			console.error('Error in scheduled job:', error);

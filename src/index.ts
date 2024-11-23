@@ -10,7 +10,6 @@
  *
  * Learn more at https://developers.cloudflare.com/workers/
  */
-import { Client } from '@neondatabase/serverless';
 
 export default {
 	async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
@@ -19,22 +18,14 @@ export default {
 
 	async scheduled(event: ScheduledController, env: Env, ctx: ExecutionContext) {
 		try {
-			const client = new Client(env.DATABASE_URL);
-			await client.connect();
+			const response = await fetch('https://ns.flashblaze.dev/api/cron-note', {
+				headers: {
+					'cron-secret': env.CRON_SECRET,
+				},
+			});
 
-			// Insert a new note
-			const insertResult = await client.query(
-				'INSERT INTO "Note" (id, note, "createdAt", "updatedAt") VALUES (gen_random_uuid(), $1, NOW(), NOW()) RETURNING id',
-				['Test note from scheduled job']
-			);
-			const noteId = insertResult.rows[0].id;
-			console.log(`Created note with ID: ${noteId}`);
-
-			// Delete the note
-			await client.query('DELETE FROM "Note" WHERE id = $1', [noteId]);
-			console.log(`Deleted note with ID: ${noteId}`);
-
-			await client.end();
+			const data = (await response.json()) as { id: string };
+			console.log(`Deleted note with ID: ${data.id}`);
 		} catch (error) {
 			console.error('Error in scheduled job:', error);
 		}
